@@ -1,0 +1,4 @@
+name = GSB Content Pane Info
+description = Provides info related to Content Panes
+package = GSB
+core = 7.x

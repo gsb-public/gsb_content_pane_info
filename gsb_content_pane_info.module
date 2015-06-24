@@ -1,0 +1,66 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function gsb_content_pane_info_menu() {
+  $items = array();
+  $items['admin/content-pane/info/%'] = array(
+    'title' => 'Content Pane Info Page',
+    'description' => 'Content Pane Info Page',
+    'page callback' => 'gsb_content_pane_info_page',
+    'page arguments' => array(3),
+    'access arguments' => array('access administration pages'),
+  );
+  return $items;
+}
+
+/**
+ * Displays page with list of nodes using the $content_pane
+ */
+function gsb_content_pane_info_page($content_pane) {
+
+  $select = db_select('panels_pane','pp');
+  $select->addField('pp', 'did');
+  $select->condition('pp.subtype', $content_pane, '=');
+  $results = $select->execute()->fetchAll();
+  $dids = array();
+  foreach($results as $key => $value) {
+    $dids[] = $value->did;
+  }
+
+  $select = db_select('panelizer_entity','pe');
+  $select->addField('pe', 'entity_id');
+  $select->distinct();
+  $select->condition('pe.did', $dids, 'IN');
+  $select->orderby('pe.entity_id');
+  $results = $select->execute()->fetchAll();
+
+  $nids = array();
+  foreach($results as $key => $value) {
+    $nids[] = $value->entity_id;
+  }
+  $nodes = node_load_multiple($nids);
+
+  $nids_tites = array();
+  foreach ($nodes as $node) {
+    $nids_titles[$node->nid] = $node->title;
+  }
+  arsort($nids_titles,SORT_STRING);
+  $nids_titles = array_reverse($nids_titles, TRUE);
+
+  $options = array('attributes' => array('target' => '_blank'));
+
+  $links = array();
+  foreach($nids_titles as $key => $value) {
+    $links[] = l($value, base_path() . 'node/' . $key, $options);
+  }
+
+  return array(
+    '#markup' => theme('item_list', array(
+      'items' => $links,
+      'title' => t('Nodes using Content Pane: ') . $content_pane
+    ))
+  );
+
+}
